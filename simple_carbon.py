@@ -9,6 +9,7 @@ leads to heterotrophic respiration
 """
 
 import numpy as np
+import pandas as pd
 
 def ACM(lat,LAI,tmn,tmx,dswr,co2,doy,ceff):
     """
@@ -131,9 +132,11 @@ def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
 if __name__ == "__main__":
     #example with data from a pixel in NT, Australia
     lat = -12.75
-    LAI = np.loadtxt('LAI.txt')
-    metdrivers = np.loadtxt('metdrivers.txt')
+    drivers = pd.read_csv('drivers.csv')
 
+    LAI = drivers.LAI
+    metdrivers = drivers.get_values()[:,1:-1]
+    
     pars = np.array([17.5,0.5,0.0001,0.000001,0.02], dtype = 'float64')
     cveg_0 = 5500.
     csom_0 = 7000.
