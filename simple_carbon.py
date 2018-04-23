@@ -10,7 +10,7 @@ leads to heterotrophic respiration
 
 import numpy as np
 
-def ACM(lat,LAI,tmn,tmx,swrd,co2,doy,ceff):
+def ACM(lat,LAI,tmn,tmx,dswr,co2,doy,ceff):
     """
     The aggregated canopy model is an emulator of the multi-layer SPA model
     which calculates canopy-level daily GPP in g C m-2 d-1as a function of 
@@ -69,12 +69,12 @@ def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
     #define the number of time steps
     nsteps = LAI.size
     # create arrays to store fluxes and pools at end of time step 
-    gpp     = np.zeros(n,dtype='float64')
-    ra      = np.zeros(n,dtype='float64')
-    rh      = np.zeros(n,dtype='float64')
+    gpp     = np.zeros(nsteps,dtype='float64')
+    ra      = np.zeros(nsteps,dtype='float64')
+    rh      = np.zeros(nsteps,dtype='float64')
 
-    cveg    = np.zeros(n+1, dtype = 'float64')     
-    csom    = np.zeros(n+1, dtype = 'float64')     
+    cveg    = np.zeros(nsteps+1, dtype = 'float64')     
+    csom    = np.zeros(nsteps+1, dtype = 'float64')     
     #store initial conditions
     cveg[0] = cveg_0
     csom[0] = csom_0
@@ -87,11 +87,11 @@ def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
     #loop over nsteps
     for ii in range(nsteps):
         #create dummy variables for readability        
-        tmn = metdrivers[:,1]
-        tmx = metdrivers[:,2]
-        dswr= metdrivers[:,3]
-        co2 = metdrivers[:,4]
-        doy = metdrivers[:,5]
+        tmn = metdrivers[ii,1]
+        tmx = metdrivers[ii,2]
+        dswr= metdrivers[ii,3]
+        co2 = metdrivers[ii,4]
+        doy = metdrivers[ii,5]
 
         gpp[ii]     = ACM(lat,LAI[ii],tmn,tmx,dswr,co2,doy,ceff)
         ra[ii]      = gpp[ii]*frau
