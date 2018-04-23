@@ -63,7 +63,26 @@ def ACM(lat,LAI,tmn,tmx,dswr,co2,doy,ceff):
 
 def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
     """
-    This is the simple carbon model running at a location at latitude lat
+    This is the simple carbon model running at a location at latitude lat, driven
+    by LAI time series.
+
+    metdrivers is an array of shape [nsteps, ndrivers], drivers are:
+    - timestep no (from 1 to nsteps)
+    - daily min temperature                         [deg C]
+    - daily max temperature                         [deg C]
+    - daily short-wave radiation                    [MJ m-2 d-1]
+    - daily co2 concentrations                      [ppmv]
+    - day of year
+
+    pars is an 1D array with 5 parameters with following ranges
+    - ceff: canopy efficiency parameter                    
+    - frau: fraction of autotrophic respiration     
+    - kveg: turnover rate of vegetation C pool
+    - ksom: turnover rate of soil C pool
+    - tfac: temperature factor to scale turnover rates 
+
+    cveg_0 is the initial size of the vegetation carbon pool
+    csom_0 is the initial size of the soil carbon pool
     """
 
     #define the number of time steps
@@ -96,9 +115,8 @@ def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
         gpp[ii]     = ACM(lat,LAI[ii],tmn,tmx,dswr,co2,doy,ceff)
         ra[ii]      = gpp[ii]*frau
 
-        #calculate temperature response function assuming a ref temperature of 15C
-        tavg    = (tmx+tmn)/2.
-        ft      = q10**((tavg-15.)/10)
+        #calculate temperature response function ft assuming a ref temperature at 0C
+        ft      = np.exp(tfac*0.5*(tmx+tmn))
 
         # calculate turnovers
         cveg_turnover = cveg[ii]*kveg*ft
@@ -111,7 +129,18 @@ def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
     # returns time series of land atmosphere fluxes and pools
     return gpp,ra,rh,cveg,csom
 
+if __name__ == "__main__":
+    #example with data from a pixel in NT, Australia
+    lat = -12.75
+    LAI = np.loadtxt('LAI.txt')
+    metdrivers = np.loadtxt('metdrivers')
 
+    pars = np.array([17.5,0.5,0.001,0.000001,1.5], dtype = 'float64')
+    cveg_0 = 5500.
+    csom_0 = 7000.
+
+    gpp,ra,rh,cveg,csom = simple_carbon(lat,LAI,metdrivers,pars,cveg_0,csom_0)
+    
         
 
 
