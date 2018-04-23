@@ -68,25 +68,26 @@ def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
 
     metdrivers is an array of shape [nsteps, ndrivers], drivers are:
     - timestep no (from 1 to nsteps)
-    - daily min temperature                         [deg C]
-    - daily max temperature                         [deg C]
-    - daily short-wave radiation                    [MJ m-2 d-1]
-    - daily co2 concentrations                      [ppmv]
+    - daily min temperature                             [deg C]
+    - daily max temperature                             [deg C]
+    - daily short-wave radiation                        [MJ m-2 d-1]
+    - daily co2 concentrations                          [ppmv]
     - day of year
 
     pars is an 1D array with 5 parameters with following ranges
-    - ceff: canopy efficiency parameter                    
-    - frau: fraction of autotrophic respiration     
-    - kveg: turnover rate of vegetation C pool
-    - ksom: turnover rate of soil C pool
-    - tfac: temperature factor to scale turnover rates 
+    - ceff: canopy efficiency parameter                 [10 - 100]      unitless
+    - frau: fraction of autotrophic respiration         [0.3 - 0.7]     unitless
+    - kveg: turnover rate of vegetation C pool          [1e-6 - 1e-2]   d-1
+    - ksom: turnover rate of soil C pool                [1e-8 - 1e-3]   d-1
+    - tfac: temperature factor to scale turnover rates  [0.018 - 0.08]  unitless
 
-    cveg_0 is the initial size of the vegetation carbon pool
-    csom_0 is the initial size of the soil carbon pool
+    cveg_0 is the initial vegetation carbon pool        [g C m-2]
+    csom_0 is the initial  soil carbon pool             [g C m-2]
     """
 
     #define the number of time steps
     nsteps = LAI.size
+
     # create arrays to store fluxes and pools at end of time step 
     gpp     = np.zeros(nsteps,dtype='float64')
     ra      = np.zeros(nsteps,dtype='float64')
@@ -99,32 +100,30 @@ def simple_carbon(lat,LAI,metdrivers,pars,cveg_0 = 1.,csom_0 = 1.):
     csom[0] = csom_0
 
     #assign dummy variables to parameters
-    ceff, frau, kveg, ksom, q10 = pars
-
-
+    ceff, frau, kveg, ksom, tfac = pars
 
     #loop over nsteps
     for ii in range(nsteps):
         #create dummy variables for readability        
-        tmn = metdrivers[ii,1]
-        tmx = metdrivers[ii,2]
-        dswr= metdrivers[ii,3]
-        co2 = metdrivers[ii,4]
-        doy = metdrivers[ii,5]
+        tmn         = metdrivers[ii,1]
+        tmx         = metdrivers[ii,2]
+        dswr        = metdrivers[ii,3]
+        co2         = metdrivers[ii,4]
+        doy         = metdrivers[ii,5]
 
         gpp[ii]     = ACM(lat,LAI[ii],tmn,tmx,dswr,co2,doy,ceff)
         ra[ii]      = gpp[ii]*frau
 
         #calculate temperature response function ft assuming a ref temperature at 0C
-        ft      = np.exp(tfac*0.5*(tmx+tmn))
+        ft          = np.exp(tfac*0.5*(tmx+tmn))
 
-        # calculate turnovers
-        cveg_turnover = cveg[ii]*kveg*ft
-        rh[ii] = csom[ii]*ksom*ft
+        # calculate vegetation turnover and rh
+        cveg_to     = cveg[ii]*kveg*ft
+        rh[ii]      = csom[ii]*ksom*ft
 
         # apply fluxes and update pools
-        cveg[ii+1]    = cveg[ii]+gpp[ii]-ra[ii]-cveg_turnover
-        csom[ii+1]    = csom[ii]+cveg_turnover-rh[ii]
+        cveg[ii+1]  = cveg[ii]+gpp[ii]-ra[ii]-cveg_to
+        csom[ii+1]  = csom[ii]+cveg_to-rh[ii]
 
     # returns time series of land atmosphere fluxes and pools
     return gpp,ra,rh,cveg,csom
@@ -133,9 +132,9 @@ if __name__ == "__main__":
     #example with data from a pixel in NT, Australia
     lat = -12.75
     LAI = np.loadtxt('LAI.txt')
-    metdrivers = np.loadtxt('metdrivers')
+    metdrivers = np.loadtxt('metdrivers.txt')
 
-    pars = np.array([17.5,0.5,0.001,0.000001,1.5], dtype = 'float64')
+    pars = np.array([17.5,0.5,0.0001,0.000001,0.02], dtype = 'float64')
     cveg_0 = 5500.
     csom_0 = 7000.
 
